@@ -3,22 +3,12 @@ use std::{
     sync::{Mutex, OnceLock},
 };
 
+pub trait Event {
+    fn get_payload(&self) -> String;
+}
+
 pub trait Subscriber {
-    fn handle(&self, event: &Event);
-}
-
-pub struct Mailer {}
-impl Subscriber for Mailer {
-    fn handle(&self, event: &Event) {
-        println!("Mailer: {:?}", event);
-    }
-}
-
-pub struct Logger {}
-impl Subscriber for Logger {
-    fn handle(&self, event: &Event) {
-        println!("Logger: {:?}", event);
-    }
+    fn handle(&self, event: &Box<dyn Event>);
 }
 
 pub struct EventBus {
@@ -30,40 +20,13 @@ impl EventBus {
         self.subscribers.lock().unwrap().push(subscriber);
     }
 
-    pub fn publish(&self, event: Event) {
+    pub fn publish(&self, event: Box<dyn Event>) {
         for subscriber in self.subscribers.lock().unwrap().deref() {
             subscriber.handle(&event);
         }
     }
 }
 
-#[derive(Debug)]
-pub enum Event {
-    UserRegistered(UserRegistered),
-    UserDeleted(UserDeleted),
-}
-
-#[derive(Debug)]
-pub struct UserRegistered {
-    pub payload: String,
-}
-
-impl UserRegistered {
-    fn get_payload(&self) -> String {
-        self.payload.clone()
-    }
-}
-
-#[derive(Debug)]
-pub struct UserDeleted {
-    pub payload: String,
-}
-
-impl UserDeleted {
-    fn get_payload(&self) -> String {
-        self.payload.clone()
-    }
-}
 pub fn event_bus() -> &'static EventBus {
     static EVENT_BUS: OnceLock<EventBus> = OnceLock::new();
 
